@@ -44,9 +44,11 @@ export default defineUserConfig({
           text: '基础体系',
           children: [
             pageLink('基础体系', '/basics/'),
-            pageLink('记住卦名和卦序', '/basics/chapter-01-hexagram-names.html'),
             pageLink('八卦基础', '/basics/bagua.html'),
-            pageLink('六十四卦基础框架', '/basics/sixty-four-hexagrams.html')
+            pageLink('五行生克', '/basics/wuxing-shengke.html'),
+            pageLink('记住卦名和卦序', '/basics/chapter-01-hexagram-names.html'),
+            pageLink('六十四卦基础框架', '/basics/sixty-four-hexagrams.html'),
+            pageLink('梅花覆射专用五行取象技巧', '/basics/quxiang.html'),
           ]
         }
       ],
