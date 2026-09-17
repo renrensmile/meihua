@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>六十四卦记忆刷题工具</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+body{max-width:760px;margin:20px auto;padding:0 16px;background:#f5f6f8;color:#222;}
+.box{background:#fff;padding:20px 22px;border-radius:12px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+h2{margin:0 0 14px;font-size:20px;}
+h3{margin:0 0 12px;font-size:16px;color:#333;}
+label{font-size:14px;color:#444;}
+/* 分段器 */
+.seg{display:inline-flex;background:#eef0f3;border-radius:9px;padding:3px;gap:2px;margin:4px 0;flex-wrap:wrap;}
+.seg button{background:transparent;color:#555;margin:0;padding:7px 14px;border:none;border-radius:7px;font-size:13px;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.seg button.active{background:#3671d9;color:#fff;box-shadow:0 1px 3px rgba(54,113,217,.3);}
+.seg button:hover:not(.active){background:#e2e5ea;}
+/* 按钮 */
+.btn{padding:8px 16px;margin:4px 4px 4px 0;border:none;border-radius:7px;background:#3671d9;color:#fff;font-size:14px;cursor:pointer;transition:background .15s;}
+.btn:hover{background:#2b5fb8;}
+.btn.secondary{background:#8a93a0;}
+.btn.secondary:hover{background:#727b88;}
+.btn.warn{background:#d64045;}
+.btn.warn:hover{background:#b83237;}
+.btn.ghost{background:#eef0f3;color:#444;}
+.btn.ghost:hover{background:#e2e5ea;}
+/* 输入 */
+input[type=text]{padding:9px 12px;font-size:15px;width:100%;max-width:420px;border:1px solid #d0d4da;border-radius:7px;margin:8px 0;outline:none;transition:border .15s;}
+input[type=text]:focus{border-color:#3671d9;}
+/* 题目区 */
+.q-area{font-size:17px;margin:14px 0;padding:16px;background:#f0f6ff;border-radius:9px;min-height:60px;}
+.q-area .q-label{font-size:13px;color:#668;margin-bottom:6px;}
+.q-area .q-main{font-size:22px;font-weight:600;}
+/* CSS 爻画 */
+.hexagram{display:flex;flex-direction:column;gap:7px;align-items:center;padding:10px 0;}
+.hexagram .yao{width:110px;height:13px;position:relative;}
+.hexagram .yao.yang{background:#1f2329;border-radius:2px;}
+.hexagram .yao.yin::before,.hexagram .yao.yin::after{content:'';position:absolute;top:0;width:44%;height:100%;background:#1f2329;border-radius:2px;}
+.hexagram .yao.yin::before{left:0;}
+.hexagram .yao.yin::after{right:0;}
+.hexagram .yao-label{font-size:11px;color:#999;position:absolute;right:-36px;top:50%;transform:translateY(-50%);width:30px;}
+/* 反馈 */
+.feedback{margin-top:10px;font-size:15px;min-height:24px;}
+.feedback .ok{color:#1a8a3a;font-weight:600;}
+.feedback .no{color:#d00;font-weight:600;}
+/* 全部卦列表 */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;margin:10px 0;}
+.gua-card{padding:8px 10px;background:#f3f4f6;border-radius:7px;font-size:13px;cursor:pointer;text-align:center;transition:all .15s;user-select:none;}
+.gua-card:hover{background:#e8eaee;}
+.gua-card.mastered{background:#d4f0d4;border-color:#8fd48f;}
+.gua-card.mastered:hover{background:#c4e8c4;}
+.gua-card.wrong{background:#fde0e0;}
+.gua-card.wrong:hover{background:#fbd0d0;}
+.gua-card .g-name{font-weight:600;font-size:14px;}
+.gua-card .g-rate{font-size:11px;color:#888;margin-top:2px;}
+.gua-card.mastered .g-rate{color:#3a7a3a;}
+.gua-card.wrong .g-rate{color:#b03030;}
+/* 统计条 */
+.stats-bar{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0;font-size:13px;color:#555;}
+.stats-bar span b{color:#222;}
+/* 隐藏文件输入 */
+#fileInput{display:none;}
+/* 小节标题 */
+.section-title{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.muted{color:#888;font-size:12px;}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h2>六十四卦记忆刷题</h2>
+  <div style="margin-bottom:6px;"><span class="muted">刷题模式</span></div>
+  <div class="seg" id="modeSeg">
+    <button data-mode="1" onclick="setMode(1)">① 卦名 → 猜上下卦</button>
+    <button data-mode="2" onclick="setMode(2)">② 卦画 → 猜卦名</button>
+    <button data-mode="3" onclick="setMode(3)">③ 爻画 → 猜卦名</button>
+  </div>
+  <div style="margin:8px 0 4px;"><span class="muted">题库范围</span></div>
+  <div class="seg" id="poolSeg">
+    <button data-pool="all" onclick="setPool('all')">全部卦</button>
+    <button data-pool="mastered" onclick="setPool('mastered')">仅已掌握复习</button>
+    <button data-pool="wrong" onclick="setPool('wrong')">刷易错题</button>
+  </div>
+  <div class="stats-bar" id="statsBar"></div>
+  <div class="q-area" id="qArea">点击上方模式开始出题</div>
+  <div>
+    <input type="text" id="ansInput" placeholder="在这里输入你的答案（回车提交）" onkeydown="if(event.key==='Enter')submitAnswer()">
+  </div>
+  <div>
+    <button class="btn" onclick="submitAnswer()">提交答案</button>
+    <button class="btn secondary" onclick="nextQ()">下一题</button>
+    <button class="btn ghost" onclick="showAnswer()">查看答案</button>
+  </div>
+  <div class="feedback" id="feedback"></div>
+</div>
+
+<div class="box">
+  <div class="section-title">
+    <h3>数据管理</h3>
+  </div>
+  <div>
+    <button class="btn ghost" onclick="exportData()">导出备份 JSON</button>
+    <button class="btn ghost" onclick="document.getElementById('fileInput').click()">导入备份 JSON</button>
+    <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
+  </div>
+  <div style="margin-top:12px;">
+    <button class="btn warn" onclick="clearMastered()">清空已掌握标记</button>
+    <button class="btn warn" onclick="clearWrong()">清空易错记录</button>
+  </div>
+</div>
+
+<div class="box">
+  <div class="section-title">
+    <h3>全部卦列表（点击标记已掌握 / 取消）</h3>
+    <span class="muted" id="listSummary"></span>
+  </div>
+  <div class="grid" id="allList"></div>
+</div>
+
+<script>
+/* ============================================================
+   基础定义：单卦三爻（从下往上 初→二→三爻）
+   直接复用，不修改
+   ============================================================ */
+const baseTrigram = {
+    "乾":["⚊","⚊","⚊"],
+    "坤":["⚋","⚋","⚋"],
+    "震":["⚊","⚋","⚋"],
+    "巽":["⚋","⚊","⚊"],
+    "坎":["⚋","⚊","⚋"],
+    "离":["⚊","⚋","⚊"],
+    "艮":["⚋","⚋","⚊"],
+    "兑":["⚊","⚊","⚋"],
+};
+// 三爻数组转为页面从上到下显示（反转）
+function triToView(arr){ return [...arr].reverse().join(""); }
+
+/* ============================================================
+   64卦数据：只保留 卦名 / 上卦 / 下卦
+   标准八宫元数据，不手改
+   ============================================================ */
+const guaData = [
+  // 乾宫
+  ["乾为天","乾","乾"],["天风姤","乾","巽"],["天山遁","乾","艮"],["天地否","乾","坤"],
+  ["风地观","巽","坤"],["山地剥","艮","坤"],["火地晋","离","坤"],["火天大有","离","乾"],
+  // 坎宫
+  ["坎为水","坎","坎"],["水泽节","坎","兑"],["水雷屯","坎","震"],["水火既济","坎","离"],
+  ["泽火革","兑","离"],["雷火丰","震","离"],["地火明夷","坤","离"],["地水师","坤","坎"],
+  // 艮宫
+  ["艮为山","艮","艮"],["山火贲","艮","离"],["山天大畜","艮","乾"],["山泽损","艮","兑"],
+  ["火泽睽","离","兑"],["天泽履","乾","兑"],["风泽中孚","巽","兑"],["风山渐","巽","艮"],
+  // 震宫
+  ["震为雷","震","震"],["雷地豫","震","坤"],["雷水解","震","坎"],["雷风恒","震","巽"],
+  ["地风升","坤","巽"],["水风井","坎","巽"],["泽风大过","兑","巽"],["泽雷随","兑","震"],
+  // 巽宫
+  ["巽为风","巽","巽"],["风天小畜","巽","乾"],["风火家人","巽","离"],["风雷益","巽","震"],
+  ["天雷无妄","乾","震"],["火雷噬嗑","离","震"],["山雷颐","艮","震"],["山风蛊","艮","巽"],
+  // 离宫
+  ["离为火","离","离"],["火山旅","离","艮"],["火风鼎","离","巽"],["火水未济","离","坎"],
+  ["山水蒙","艮","坎"],["风水涣","巽","坎"],["天水讼","乾","坎"],["天火同人","乾","离"],
+  // 坤宫
+  ["坤为地","坤","坤"],["地雷复","坤","震"],["地泽临","坤","兑"],["地天泰","坤","乾"],
+  ["雷天大壮","震","乾"],["泽天夬","兑","乾"],["水天需","坎","乾"],["水地比","坎","坤"],
+  // 兑宫
+  ["兑为泽","兑","兑"],["泽水困","兑","坎"],["泽地萃","兑","坤"],["泽山咸","兑","艮"],
+  ["水山蹇","坎","艮"],["地山谦","坤","艮"],["雷山小过","震","艮"],["雷泽归妹","震","兑"],
+];
+
+/* ============================================================
+   爻画生成：根据上下卦自动生成六爻（从上到下）
+   返回数组，每个元素 'yang' 或 'yin'
+   ============================================================ */
+function getYaoArray(up, down){
+    const viewStr = triToView(baseTrigram[up]) + triToView(baseTrigram[down]);
+    return viewStr.split('').map(c => c === "⚊" ? 'yang' : 'yin');
+}
+
+// 生成 CSS 爻画 HTML
+function renderHexagramHTML(up, down, showLabels){
+    const yaos = getYaoArray(up, down);
+    const labels = ['上爻','五爻','四爻','三爻','二爻','初爻'];
+    return '<div class="hexagram">' + yaos.map((y,i) => {
+        const label = showLabels ? `<span class="yao-label">${labels[i]}</span>` : '';
+        return `<div class="yao ${y}">${label}</div>`;
+    }).join('') + '</div>';
+}
+
+/* ============================================================
+   状态管理
+   ============================================================ */
+const ACC_THRESHOLD = 0.9;
+const STORAGE_KEY = 'guaQuiz_v2';
+
+let currentMode = 0;       // 0=未选, 1/2/3
+let currentPool = 'all';    // all / mastered / wrong
+let currentItem = null;
+let mastered = new Set();
+let wrongStats = {};        // {卦名: {correct, wrong}}
+
+/* ============================================================
+   localStorage 读写
+   ============================================================ */
+function loadStorage(){
+    try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+            const obj = JSON.parse(raw);
+            if(Array.isArray(obj.mastered)) mastered = new Set(obj.mastered);
+            if(obj.wrongStats && typeof obj.wrongStats === 'object') wrongStats = obj.wrongStats;
+        }
+    }catch(e){ console.warn('读取本地存储失败', e); }
+}
+function saveStorage(){
+    try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            mastered: [...mastered],
+            wrongStats: wrongStats
+        }));
+    }catch(e){ console.warn('保存本地存储失败', e); }
+}
+
+/* ============================================================
+   易错题逻辑
+   ============================================================ */
+function getAccuracy(name){
+    const s = wrongStats[name];
+    if(!s) return null;
+    const total = s.correct + s.wrong;
+    if(total === 0) return null;
+    return s.correct / total;
+}
+function isWrongPool(name){
+    const s = wrongStats[name];
+    if(!s || s.wrong === 0) return false;
+    const acc = getAccuracy(name);
+    return acc !== null && acc < ACC_THRESHOLD;
+}
+function updateStats(name, isCorrect){
+    if(!wrongStats[name]) wrongStats[name] = {correct:0, wrong:0};
+    if(isCorrect) wrongStats[name].correct++;
+    else wrongStats[name].wrong++;
+    saveStorage();
+}
+
+/* ============================================================
+   题库
+   ============================================================ */
+function getPool(){
+    if(currentPool === 'mastered') return guaData.filter(x => mastered.has(x[0]));
+    if(currentPool === 'wrong') return guaData.filter(x => isWrongPool(x[0]));
+    return guaData;
+}
+
+/* ============================================================
+   模式 / 题库切换
+   ============================================================ */
+function setMode(m){
+    currentMode = m;
+    document.querySelectorAll('#modeSeg button').forEach(b => {
+        b.classList.toggle('active', Number(b.dataset.mode) === m);
+    });
+    nextQ();
+}
+function setPool(p){
+    currentPool = p;
+    document.querySelectorAll('#poolSeg button').forEach(b => {
+        b.classList.toggle('active', b.dataset.pool === p);
+    });
+    renderStats();
+    if(currentMode > 0) nextQ();
+}
+
+/* ============================================================
+   出题
+   ============================================================ */
+function nextQ(){
+    const pool = getPool();
+    document.getElementById('feedback').innerHTML = '';
+    document.getElementById('ansInput').value = '';
+    const qDom = document.getElementById('qArea');
+    if(currentMode === 0){
+        qDom.innerHTML = '<div class="q-label">提示</div><div>请先选择上方刷题模式</div>';
+        currentItem = null;
+        return;
+    }
+    if(pool.length === 0){
+        let tip = "题库为空！";
+        if(currentPool === 'mastered') tip += "请先在下方列表标记一些已掌握的卦，或切换到「全部卦」。";
+        else if(currentPool === 'wrong') tip += "当前没有易错题（答错的卦会自动进入易错题池），或切换到「全部卦」。";
+        qDom.innerHTML = `<div class="q-label">提示</div><div>${tip}</div>`;
+        currentItem = null;
+        return;
+    }
+    currentItem = pool[Math.floor(Math.random() * pool.length)];
+    const [gname, up, down] = currentItem;
+    if(currentMode === 1){
+        qDom.innerHTML = `<div class="q-label">题目｜卦名</div><div class="q-main">${gname}</div><div style="margin-top:8px;font-size:14px;color:#556;">请输入：上卦 下卦（例：乾 坤）</div>`;
+    }else if(currentMode === 2){
+        qDom.innerHTML = `<div class="q-label">题目｜卦画（从上到下）</div>${renderHexagramHTML(up, down, false)}<div style="font-size:14px;color:#556;">请输入卦名</div>`;
+    }else if(currentMode === 3){
+        qDom.innerHTML = `<div class="q-label">题目｜爻画（从上到下，最下方为初爻）</div>${renderHexagramHTML(up, down, true)}<div style="font-size:14px;color:#556;">请输入卦名</div>`;
+    }
+    setTimeout(()=>document.getElementById('ansInput').focus(), 50);
+}
+
+/* ============================================================
+   提交答案
+   ============================================================ */
+function submitAnswer(){
+    if(!currentItem){ alert("请先出题"); return; }
+    const [gname, up, down] = currentItem;
+    const userAns = document.getElementById('ansInput').value.trim();
+    const feed = document.getElementById('feedback');
+    let isCorrect = false;
+    let correctAns = '';
+    if(currentMode === 1){
+        correctAns = `${up} ${down}`;
+        isCorrect = (userAns === correctAns);
+    }else{
+        correctAns = gname;
+        isCorrect = (userAns === gname);
+    }
+    updateStats(gname, isCorrect);
+    if(isCorrect){
+        feed.innerHTML = `<div class="ok">✅ 正确！${gname}｜上${up} 下${down}</div>`;
+    }else{
+        feed.innerHTML = `<div class="no">❌ 错误。正确答案：<strong>${correctAns}</strong>（${gname}，上${up}下${down}）</div>`;
+    }
+    renderStats();
+    renderAllList();
+}
+
+/* ============================================================
+   查看答案
+   ============================================================ */
+function showAnswer(){
+    if(!currentItem){ alert("请先出题"); return; }
+    const [gname, up, down] = currentItem;
+    const feed = document.getElementById('feedback');
+    if(currentMode === 1){
+        feed.innerHTML = `<div class="no">答案：${up} ${down}（${gname}）</div>`;
+    }else{
+        feed.innerHTML = `<div class="no">答案：${gname}（上${up}下${down}）</div>`;
+    }
+}
+
+/* ============================================================
+   统计条
+   ============================================================ */
+function renderStats(){
+    const wrongCount = guaData.filter(x => isWrongPool(x[0])).length;
+    const poolSize = getPool().length;
+    let poolLabel = '全部卦';
+    if(currentPool === 'mastered') poolLabel = '已掌握';
+    else if(currentPool === 'wrong') poolLabel = '易错题';
+    document.getElementById('statsBar').innerHTML =
+        `<span>题库：<b>${poolLabel}（${poolSize}）</b></span>` +
+        `<span>已掌握：<b>${mastered.size}/64</b></span>` +
+        `<span>易错题：<b>${wrongCount}</b></span>`;
+}
+
+/* ============================================================
+   全部卦列表
+   ============================================================ */
+function renderAllList(){
+    const cont = document.getElementById('allList');
+    cont.innerHTML = '';
+    guaData.forEach(it => {
+        const name = it[0];
+        const acc = getAccuracy(name);
+        const rateStr = acc === null ? '未答' : Math.round(acc*100) + '%';
+        const isM = mastered.has(name);
+        const isW = isWrongPool(name);
+        const cls = 'gua-card' + (isM ? ' mastered' : '') + (isW ? ' wrong' : '');
+        const div = document.createElement('div');
+        div.className = cls;
+        div.title = `上${it[1]} 下${it[2]}｜正确率 ${rateStr}`;
+        div.innerHTML = `<div class="g-name">${name}</div><div class="g-rate">${rateStr}</div>`;
+        div.onclick = () => {
+            if(mastered.has(name)) mastered.delete(name);
+            else mastered.add(name);
+            saveStorage();
+            renderStats();
+            renderAllList();
+        };
+        cont.appendChild(div);
+    });
+    const wrongCount = guaData.filter(x => isWrongPool(x[0])).length;
+    document.getElementById('listSummary').textContent = `共64卦｜已掌握${mastered.size}｜易错题${wrongCount}`;
+}
+
+/* ============================================================
+   导出 / 导入
+   ============================================================ */
+function exportData(){
+    const data = {
+        version: 2,
+        exportTime: new Date().toISOString(),
+        mastered: [...mastered],
+        wrongStats: wrongStats
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gua_quiz_backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importData(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+        try{
+            const obj = JSON.parse(e.target.result);
+            if(Array.isArray(obj.mastered)){
+                mastered = new Set(obj.mastered.filter(n => guaData.some(g => g[0] === n)));
+            }
+            if(obj.wrongStats && typeof obj.wrongStats === 'object'){
+                wrongStats = {};
+                for(const k in obj.wrongStats){
+                    if(guaData.some(g => g[0] === k)){
+                        const v = obj.wrongStats[k];
+                        wrongStats[k] = {correct: Number(v.correct)||0, wrong: Number(v.wrong)||0};
+                    }
+                }
+            }
+            saveStorage();
+            renderStats();
+            renderAllList();
+            alert("导入成功！");
+        }catch(err){
+            alert("导入失败：文件格式不正确");
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+/* ============================================================
+   清空
+   ============================================================ */
+function clearMastered(){
+    if(!confirm("确定清空全部已掌握标记？")) return;
+    mastered.clear();
+    saveStorage();
+    renderStats();
+    renderAllList();
+}
+function clearWrong(){
+    if(!confirm("确定清空全部易错记录（答题统计）？")) return;
+    wrongStats = {};
+    saveStorage();
+    renderStats();
+    renderAllList();
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+loadStorage();
+setPool('all');
+renderAllList();
+</script>
+</body>
+</html>

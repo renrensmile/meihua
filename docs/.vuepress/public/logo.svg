@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="梅花易数学习笔记">
+  <rect width="160" height="160" rx="28" fill="#f7efe3"/>
+  <circle cx="80" cy="80" r="58" fill="none" stroke="#7c4a2d" stroke-width="5"/>
+  <circle cx="80" cy="80" r="42" fill="none" stroke="#c18a5b" stroke-width="2" stroke-dasharray="3 5"/>
+  <path d="M80 33v94M33 80h94M47 47l66 66M113 47 47 113" stroke="#7c4a2d" stroke-width="3"/>
+  <path d="M73 54h14M73 64h14M73 74h14M73 86h14M73 96h14M73 106h14" stroke="#7c4a2d" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="80" cy="80" r="10" fill="#9a6540"/>
+</svg>
