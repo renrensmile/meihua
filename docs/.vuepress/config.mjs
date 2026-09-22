@@ -49,6 +49,7 @@ export default defineUserConfig({
             pageLink('记住卦名和卦序', '/basics/chapter-01-hexagram-names.html'),
             pageLink('六十四卦基础框架', '/basics/sixty-four-hexagrams.html'),
             pageLink('梅花覆射专用五行取象技巧', '/basics/quxiang.html'),
+            pageLink('取象技巧2', '/basics/quxiang2.html')
           ]
         }
       ],
